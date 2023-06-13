@@ -1,0 +1,35 @@
+services:
+  domain_unique_path_alias.path_alias_manager:
+    class: Drupal\domain_unique_path_alias\DomainUniquePathAliasManager
+    decorates: path_alias.manager
+    arguments:
+      - '@path_alias.repository'
+      - '@path_alias.whitelist'
+      - '@language_manager'
+      - '@cache.data'
+      - '@entity_type.manager'
+      - '@request_stack'
+  domain_unique_path_alias.generator:
+    class: Drupal\domain_unique_path_alias\DomainUniquePathAliasGenerator
+    decorates: pathauto.generator
+    arguments:
+      - '@config.factory'
+      - '@module_handler'
+      - '@token'
+      - '@pathauto.alias_cleaner'
+      - '@pathauto.alias_storage_helper'
+      - '@domain_unique_path_alias.alias_uniquifier'
+      - '@pathauto.verbose_messenger'
+      - '@string_translation'
+      - '@token.entity_mapper'
+      - '@entity_type.manager'
+      - '@plugin.manager.alias_type'
+  domain_unique_path_alias.alias_uniquifier:
+    class: Drupal\domain_unique_path_alias\DomainUniquePathAliasUniquifier
+    arguments:
+      - '@config.factory'
+      - '@pathauto.alias_storage_helper'
+      - '@module_handler'
+      - '@router.route_provider'
+      - '@path_alias.manager'
+      - '@database'

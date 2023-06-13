@@ -1,0 +1,78 @@
+<?php
+
+use Drupal\Core\Entity\ContentEntityType;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\node\Entity\Node;
+use Drupal\node\NodeInterface;
+use Drupal\path_alias\PathAliasInterface;
+
+/**
+* Implements hook_ENTITY_TYPE_presave().
+*
+* @param \Drupal\Core\Entity\ContentEntityInterface $entity
+*/
+function domain_unique_path_alias_entity_presave(EntityInterface $entity) {
+  if ($entity instanceof PathAliasInterface) {
+    // Get domain_id from get request param.
+    $fieldDomainSource = \Drupal::request()->request->get('field_domain_source');
+    // Get domain_id from field_domain_source field.
+    if (empty($fieldDomainSource)) {
+      // Get field_domain_source data if a new translation.
+      $node = \Drupal::routeMatch()->getParameter('node');
+
+      // Get node from path_alias path.
+      if (!$node instanceof NodeInterface) {
+        $path = explode("/", $entity->getPath());
+        if (
+          isset($path[1], $path[2])
+          && $path[1] == 'node'
+          && is_numeric($path[2])
+        ) {
+          $node = Node::load($path[2]);
+        }
+      }
+
+      if ($node instanceof NodeInterface) {
+        $langcode = \Drupal::languageManager()
+          ->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
+        $langcode = $entity->get('langcode')->getValue() ?? $langcode;
+        $translation_languages = $node->getTranslationLanguages();
+
+        if (in_array($langcode, $translation_languages) && $node->hasField('field_domain_source')) {
+          $fieldDomainSource = $node->get('field_domain_source')->getString();
+        }
+      }
+    }
+
+    // Set domain_id to path_alias entity.
+    if (!empty($fieldDomainSource)) {
+      /** @var \Drupal\path_alias\Entity\PathAlias $entity */
+      $entity->set('domain_id', $fieldDomainSource);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function domain_unique_path_alias_entity_base_field_info(ContentEntityType $entity_type) {
+  $fields = [];
+  if ($entity_type->id() === 'path_alias') {
+    $fields['domain_id'] = BaseFieldDefinition::create('string')
+      ->setLabel('Domain Id')
+      ->setDescription('Domain identification.');
+  }
+
+  return $fields;
+}
+
+/**
+ * Implements hook_validation_constraint_alter().
+ */
+function domain_unique_path_alias_validation_constraint_alter(array &$definitions) {
+  if (isset($definitions['UniquePathAlias'])) {
+    $definitions['UniquePathAlias']['class'] = '\\Drupal\\domain_unique_path_alias\\Plugin\\Validation\\Constraints\\DomainUniquePathAliasConstraint';
+  }
+}

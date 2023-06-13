@@ -1,0 +1,19 @@
+<?php
+
+use Drupal\Core\Field\BaseFieldDefinition;
+
+/**
+* Add domain_id column to path_alias table.
+*/
+function domain_unique_path_alias_update_9501() {
+  $field_storage_definition_domain_id = BaseFieldDefinition::create('string')
+    ->setLabel('Domain Id')
+    ->setDescription('Domain identification.');
+
+  \Drupal::entityDefinitionUpdateManager()->installFieldStorageDefinition(
+    'domain_id',
+    'path_alias',
+    'path_alias',
+    $field_storage_definition_domain_id
+  );
+}

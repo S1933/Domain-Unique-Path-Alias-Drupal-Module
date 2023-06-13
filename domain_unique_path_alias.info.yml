@@ -1,0 +1,9 @@
+name: Domain Unique Path Alias
+description: Allow unique path alias by domain entity for different contents.
+package: Domain
+type: module
+core_version_requirement: ^9.4 || ^10
+dependencies:
+  - domain:domain_source
+  - drupal:path_alias
+  - drupal:pathauto
