@@ -94,6 +94,22 @@ class DomainUniquePathAliasTest extends DomainTestBase {
     $this->assertSession()->responseContains('<a href="http://example.com/contact" hreflang="en">');
     $this->assertSession()->responseContains('<a href="http://example.com/contact-bis" hreflang="en">');
     $this->assertSession()->responseContains('<a href="http://domain1.example.com/contact" hreflang="en">');
+
+    $constraint_message = 'The alias /contact is already in use in this domain (example_com).';
+
+    $edit = [
+      'path[0][alias]' => '/contact-bis-bis',
+    ];
+    $this->drupalGet('node/2/edit');
+    $this->submitForm($edit, 'Save');
+    $this->assertSession()->pageTextNotContains($constraint_message);
+
+    $edit = [
+      'path[0][alias]' => '/contact',
+    ];
+    $this->drupalGet('node/2/edit');
+    $this->submitForm($edit, 'Save');
+    $this->assertSession()->pageTextContains($constraint_message);
   }
 
 }

@@ -37,10 +37,10 @@ function domain_unique_path_alias_entity_presave(EntityInterface $entity) {
       if ($node instanceof NodeInterface) {
         $langcode = \Drupal::languageManager()
           ->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
-        $langcode = $entity->get('langcode')->getValue() ?? $langcode;
+        $langcode = $entity->get('langcode')->getString() ?? $langcode;
         $translation_languages = $node->getTranslationLanguages();
 
-        if (in_array($langcode, $translation_languages) && $node->hasField('field_domain_source')) {
+        if (in_array($langcode, array_keys($translation_languages)) && $node->hasField('field_domain_source')) {
           $fieldDomainSource = $node->get('field_domain_source')->getString();
         }
       }
