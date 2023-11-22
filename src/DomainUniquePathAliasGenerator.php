@@ -35,10 +35,6 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
     // @todo convert to multi-exception handling in PHP 7.1.
     catch (EntityMalformedException $exception) {
       return NULL;
-    } catch (UndefinedLinkTemplateException $exception) {
-      return NULL;
-    } catch (\UnexpectedValueException $exception) {
-      return NULL;
     }
 
     $source = '/' . $internalPath;
@@ -46,7 +42,7 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
     $langcode = $entity->language()->getId();
 
     // Core does not handle aliases with language Not Applicable.
-    if ($langcode == LanguageInterface::LANGCODE_NOT_APPLICABLE) {
+    if ($langcode === LanguageInterface::LANGCODE_NOT_APPLICABLE) {
       $langcode = LanguageInterface::LANGCODE_NOT_SPECIFIED;
     }
 
@@ -70,20 +66,19 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
 
     // Special handling when updating an item which is already aliased.
     $existing_alias = NULL;
-    if ($op == 'update' || $op == 'bulkupdate') {
+    if ($op === 'update' || $op === 'bulkupdate') {
       if ($existing_alias = $this->aliasStorageHelper->loadBySource($source, $langcode)) {
         switch ($config->get('update_action')) {
           case PathautoGeneratorInterface::UPDATE_ACTION_NO_NEW:
             // If an alias already exists,
-            // and the update action is set to do nothing,
-            // then gosh-darn it, do nothing.
+            // and the update action is set to do nothing, do nothing.
             return NULL;
         }
       }
     }
 
     // Replace any tokens in the pattern.
-    // Uses callback option to clean replacements. No sanitization.
+    // Uses a callback option to clean replacements. No sanitization.
     // Pass empty BubbleableMetadata object to explicitly ignore cacheablity,
     // as the result is never rendered.
     $alias = $this->token->replace($pattern->getPattern(), $data, [
@@ -114,15 +109,15 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
     }
 
     $domain_id = \Drupal::request()->request->get('field_domain_source');
-    // Do not generate an unique path alias if it already exists.
+    // Do not generate a unique path alias if it already exists.
     if ($this->aliasUniquifier->isReserved($alias, $source, $langcode, $domain_id)) {
-      throw new \InvalidArgumentException('Path alias should be unique.');
+      \Drupal::messenger()->addWarning(t('Path alias should be unique for, source: '. $source . ', langcode: ' . $langcode . ', domain_id: ' . $domain_id));
     }
 
     // If the alias already exists, generate a new, hopefully unique, variant.
     $original_alias = $alias;
     $this->aliasUniquifier->uniquify($alias, $source, $langcode);
-    if ($original_alias != $alias) {
+    if ($original_alias !== $alias) {
       // Alert the user why this happened.
       $this->pathautoMessenger->addMessage($this->t('The automatically generated alias %original_alias conflicted with an existing alias. Alias changed to %alias.', [
         '%original_alias' => $original_alias,
@@ -131,7 +126,7 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
     }
 
     // Return the generated alias if requested.
-    if ($op == 'return') {
+    if ($op === 'return') {
       return $alias;
     }
 

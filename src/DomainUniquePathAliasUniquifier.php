@@ -57,36 +57,13 @@ class DomainUniquePathAliasUniquifier extends AliasUniquifier {
 
     if (isset($result['path'])) {
       $existing_path = $result['path'];
-      if ($existing_path != $alias) {
+      if ($existing_path !== $alias) {
         // If it is an alias for the provided source, it is allowed to keep using
         // it. If not, then it is reserved.
-        return $existing_path != $source;
+        return $existing_path !== $source;
       }
     }
 
     return parent::isReserved($alias, $source, $langcode);
-
-    // // Then check if there is a route with the same path.
-    // if ($this->isRoute($alias)) {
-    //   return TRUE;
-    // }
-
-    // // Finally check if any other modules have reserved the alias.
-    // $args = [
-    //   $alias,
-    //   $source,
-    //   $langcode,
-    // ];
-    // $implementations = $this->moduleHandler->invokeAll('pathauto_is_alias_reserved');
-    // foreach ($implementations as $module) {
-    //   $result = $this->moduleHandler->invoke($module, 'pathauto_is_alias_reserved', $args);
-    //   if (!empty($result)) {
-    //     // As soon as the first module says that an alias is in fact reserved,
-    //     // then there is no point in checking the rest of the modules.
-    //     return TRUE;
-    //   }
-    // }
-
-    // return FALSE;
   }
 }

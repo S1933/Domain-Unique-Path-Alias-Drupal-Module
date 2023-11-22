@@ -75,10 +75,13 @@ class DomainUniquePathAliasManager extends AliasManager {
    *   The path represented by alias, or the alias if no path was found.
    */
   public function getPathByAlias($alias, $langcode = NULL) {
+
+    // Do not process asset files.
     if ($this->isAssetFile($alias)) {
       return $alias;
     }
 
+    // todo: Investigate if TYPE_CONTENT is the correct type or should be editable in modules settings.
     $langcode = $langcode ?: $this->languageManager
       ->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)
       ->getId();
@@ -106,13 +109,13 @@ class DomainUniquePathAliasManager extends AliasManager {
   }
 
   /**
-   * Check if path is an asset by its extension.
+   * Check if a path is an asset by its extension.
    *
    * @param string $alias
    * @return bool
    */
   private function  isAssetFile($alias) {
-    $noAlias = ['svg', 'png', 'jpeg', 'jpg', 'css', 'js', 'gif', 'webp'];
+    $noAlias = ['svg', 'png', 'jpeg', 'jpg', 'css', 'js', 'gif', 'webp', 'ts'];
     $extension = pathinfo($alias, PATHINFO_EXTENSION);
     $extension = explode('?', $extension);
     if (in_array($extension[0], $noAlias)) {

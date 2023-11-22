@@ -27,7 +27,7 @@ function domain_unique_path_alias_entity_presave(EntityInterface $entity) {
         $path = explode("/", $entity->getPath());
         if (
           isset($path[1], $path[2])
-          && $path[1] == 'node'
+          && $path[1] === 'node'
           && is_numeric($path[2])
         ) {
           $node = Node::load($path[2]);
