@@ -9,10 +9,8 @@ use Drupal\node\NodeInterface;
 use Drupal\path_alias\PathAliasInterface;
 
 /**
-* Implements hook_ENTITY_TYPE_presave().
-*
-* @param \Drupal\Core\Entity\ContentEntityInterface $entity
-*/
+ * Implements hook_ENTITY_TYPE_presave().
+ */
 function domain_unique_path_alias_entity_presave(EntityInterface $entity) {
   if ($entity instanceof PathAliasInterface) {
     // Get domain_id from get request param.

@@ -2,34 +2,40 @@
 
 namespace Drupal\domain_unique_path_alias;
 
+use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\path_alias\AliasManager;
 use Drupal\path_alias\AliasWhitelistInterface;
 use Drupal\path_alias\PathAliasInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Class DomainUniquePathAliasManager
+ * The path alias manager decorator.
  */
 class DomainUniquePathAliasManager extends AliasManager {
 
   use DependencySerializationTrait;
 
   /**
+   * The path alias entity.
+   *
    * @var \Drupal\path_alias\Entity\PathAlias
    */
   protected $pathAlias;
 
   /**
+   * The Entity Type Manager.
+   *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
 
   /**
+   * The current request.
+   *
    * @var \Symfony\Component\HttpFoundation\RequestStack
    */
   protected $currentRequest;
@@ -112,7 +118,10 @@ class DomainUniquePathAliasManager extends AliasManager {
    * Check if a path is an asset by its extension.
    *
    * @param string $alias
+   *   An alias.
+   *
    * @return bool
+   *   Check result.
    */
   private function  isAssetFile($alias) {
     $noAlias = ['svg', 'png', 'jpeg', 'jpg', 'css', 'js', 'gif', 'webp', 'ts'];
@@ -123,4 +132,5 @@ class DomainUniquePathAliasManager extends AliasManager {
     }
     return FALSE;
   }
+
 }

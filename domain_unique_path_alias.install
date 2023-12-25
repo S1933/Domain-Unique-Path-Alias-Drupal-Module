@@ -3,6 +3,32 @@
 use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
+ * Implements hook_install().
+ */
+function domain_unique_path_alias_install($is_syncing) {
+
+  // Add domain ids to existing aliases.
+  /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager */
+  $entity_type_manager = \Drupal::entityTypeManager();
+  /** @var \Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper $path_alias_helper */
+  $path_alias_helper = \Drupal::service('domain_unique_path_alias.helper');
+  $path_alias_storage = $entity_type_manager->getStorage('path_alias');
+  $aliases = $path_alias_storage->getQuery()
+    ->notExists('domain_id')
+    ->accessCheck(FALSE)
+    ->execute();
+  foreach ($aliases as $alias) {
+    $path_alias = $path_alias_storage->load($alias);
+    $path = $path_alias->getPath();
+    $domain_id = $path_alias_helper->getPathDomainId($path);
+    if (!empty($domain_id)) {
+      $path_alias->set('domain_id', $domain_id);
+      $path_alias->save();
+    }
+  }
+}
+
+/**
 * Add domain_id column to path_alias table.
 */
 function domain_unique_path_alias_update_9501() {

@@ -48,6 +48,12 @@ class DomainUniquePathAliasUniquifier extends AliasUniquifier {
    * {@inheritdoc}
    */
   public function isReserved($alias, $source, $langcode = LanguageInterface::LANGCODE_NOT_SPECIFIED, $domain_id = '') {
+
+    // If domain id is not provided, use parent uniquifier.
+    if (empty($domain_id)) {
+      return parent::isReserved($alias, $source, $langcode);
+    }
+
     // Check if this domain alias already exists.
     $query = $this->database->select('path_alias', 'path_alias')
       ->fields('path_alias', ['langcode', 'path', 'alias'])
@@ -64,6 +70,28 @@ class DomainUniquePathAliasUniquifier extends AliasUniquifier {
       }
     }
 
-    return parent::isReserved($alias, $source, $langcode);
+    // Then check if there is a route with the same path.
+    if ($this->isRoute($alias)) {
+      return TRUE;
+    }
+
+    // Finally check if any other modules have reserved the alias.
+    $args = [
+      $alias,
+      $source,
+      $langcode,
+    ];
+    $implementations = $this->moduleHandler->invokeAll('pathauto_is_alias_reserved');
+    foreach ($implementations as $module) {
+      $result = $this->moduleHandler->invoke($module, 'pathauto_is_alias_reserved', $args);
+      if (!empty($result)) {
+        // As soon as the first module says that an alias is in fact reserved,
+        // then there is no point in checking the rest of the modules.
+        return TRUE;
+      }
+    }
+
+    return FALSE;
   }
+
 }

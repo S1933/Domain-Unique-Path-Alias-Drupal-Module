@@ -33,3 +33,7 @@ services:
       - '@router.route_provider'
       - '@path_alias.manager'
       - '@database'
+
+  domain_unique_path_alias.helper:
+    class: Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper
+    arguments: ['@entity_type.manager']
