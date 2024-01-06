@@ -16,6 +16,11 @@ class DomainUniquePathAliasTest extends DomainTestBase {
   /**
    * {@inheritdoc}
    */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
   protected static $modules = [
     'domain_access',
     'domain_source',
