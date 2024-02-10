@@ -4,10 +4,10 @@ use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
  * Implements hook_install().
+ *
+ * Add domain ids to existing aliases.
  */
 function domain_unique_path_alias_install($is_syncing) {
-
-  // Add domain ids to existing aliases.
   /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager */
   $entity_type_manager = \Drupal::entityTypeManager();
   /** @var \Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper $path_alias_helper */
@@ -29,17 +29,15 @@ function domain_unique_path_alias_install($is_syncing) {
 }
 
 /**
-* Add domain_id column to path_alias table.
-*/
-function domain_unique_path_alias_update_9501() {
-  $field_storage_definition_domain_id = BaseFieldDefinition::create('string')
-    ->setLabel('Domain Id')
-    ->setDescription('Domain identification.');
-
-  \Drupal::entityDefinitionUpdateManager()->installFieldStorageDefinition(
-    'domain_id',
-    'path_alias',
-    'path_alias',
-    $field_storage_definition_domain_id
-  );
+ * Implements hook_uninstall().
+ *
+ * Core does not properly purge field provided by configuration entities.
+ * There are a few related issues and @todo notices in core to this effect.
+ * Instead, we handle field purges ourselves.
+ */
+function domain_unique_path_alias_uninstall() {
+  // Do a pass of purging on deleted Field API data, if any exists.
+  $limit = \Drupal::config('field.settings')->get('purge_batch_size');
+  field_purge_batch($limit);
+  \Drupal::entityTypeManager()->clearCachedDefinitions();
 }
