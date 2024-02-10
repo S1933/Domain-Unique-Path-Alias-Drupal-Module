@@ -34,9 +34,16 @@ class DomainUniquePathAliasManager extends AliasManager {
   protected $entityTypeManager;
 
   /**
-   * The current request.
+   * A RequestStack instance.
    *
    * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
+   * The current request.
+   *
+   * @var \Symfony\Component\HttpFoundation\Request
    */
   protected $currentRequest;
 
@@ -53,7 +60,7 @@ class DomainUniquePathAliasManager extends AliasManager {
    *   Cache backend.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
-   * @param \Symfony\Component\HttpFoundation\RequestStack $request
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request stack.
    */
   public function __construct(
@@ -62,11 +69,11 @@ class DomainUniquePathAliasManager extends AliasManager {
     LanguageManagerInterface $language_manager,
     CacheBackendInterface $cache,
     EntityTypeManagerInterface $entity_type_manager,
-    RequestStack $request
+    RequestStack $request_stack,
   ) {
     parent::__construct($alias_repository, $whitelist, $language_manager, $cache);
     $this->entityTypeManager = $entity_type_manager;
-    $this->currentRequest = $request->getCurrentRequest();
+    $this->requestStack = $request_stack;
   }
 
   /**
@@ -92,7 +99,11 @@ class DomainUniquePathAliasManager extends AliasManager {
       ->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)
       ->getId();
 
-    $domain_id = $this->currentRequest->request->get('field_domain_source_url') ?? $this->currentRequest->request->get('field_domain_source');
+    $domain_id = NULL;
+    if (!empty($this->getRequest())) {
+      $domain_id = $this->currentRequest->request->get('field_domain_source_url') ?? $this->currentRequest->request->get('field_domain_source');
+    }
+
     if ($alias && $domain_id && $langcode) {
       $properties = [
         'alias' => $alias,
@@ -131,6 +142,19 @@ class DomainUniquePathAliasManager extends AliasManager {
       return TRUE;
     }
     return FALSE;
+  }
+
+  /**
+   * Ensures that the currentRequest is loaded.
+   *
+   * @return \Symfony\Component\HttpFoundation\Request|null
+   *   The current request object.
+   */
+  private function getRequest() {
+    if (!isset($this->currentRequest)) {
+      $this->currentRequest = $this->requestStack->getCurrentRequest();
+    }
+    return $this->currentRequest;
   }
 
 }
