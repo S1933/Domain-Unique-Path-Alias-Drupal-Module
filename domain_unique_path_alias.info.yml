@@ -4,6 +4,7 @@ package: Domain
 type: module
 core_version_requirement: ^9.4 || ^10
 dependencies:
-  - domain:domain_source
+  - domain:domain
+  - domain_source:domain_source
   - drupal:path_alias
   - drupal:pathauto
