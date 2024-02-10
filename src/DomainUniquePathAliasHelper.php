@@ -2,6 +2,7 @@
 
 namespace Drupal\domain_unique_path_alias;
 
+use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
@@ -15,9 +16,7 @@ class DomainUniquePathAliasHelper {
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
    */
-  public function __construct(protected EntityTypeManagerInterface $entityTypeManager) {
-
-  }
+  public function __construct(protected EntityTypeManagerInterface $entityTypeManager) {}
 
   /**
    * Gets the domain id from the path.
@@ -41,34 +40,38 @@ class DomainUniquePathAliasHelper {
     $id = end($parts);
     switch ($parts[0]) {
       case 'taxonomy':
+        /** @var \Drupal\taxonomy\TermInterface $entity */
         $entity = $this->entityTypeManager->getStorage('taxonomy_term')->load($id);
         break;
 
       case 'node':
+        /** @var \Drupal\node\NodeInterface $entity */
         $entity = $this->entityTypeManager->getStorage('node')->load($id);
         break;
     }
 
-    // Check that the entity behind the path exists.
-    if (empty($entity)) {
-      return '';
+    return isset($entity) ? $this->getDomainId($entity) : '';
+  }
+
+  /**
+   * Get the domain id for a given entity.
+   *
+   * @param EntityPublishedInterface $entity
+   *   The entity.
+   *
+   * @return string
+   *   Domain id if any or empty string.
+   */
+  public function getDomainId(EntityPublishedInterface $entity): string {
+    // Get the domain id if using domain_source or fallback with domain_access field.
+    if ($entity->hasField('field_domain_source') && !$entity->get('field_domain_source')->isEmpty()) {
+      $domain_id = $entity->get('field_domain_source')->getString();
+    }
+    else if ($entity->hasField('field_domain_access') && !$entity->get('field_domain_access')->isEmpty()) {
+      $domain_id = $entity->get('field_domain_access')->first()->getString();
     }
 
-    // Get the domain id using domain_source with fallback to domain_access.
-    if ($entity->hasField('field_domain_source')) {
-      $item = $entity->get('field_domain_source');
-      if (!$item->isEmpty()) {
-        $domain_id = $item->get(0)->getString();
-      }
-    }
-    if (empty($domain_id) && $entity->hasField('field_domain_access')) {
-      $item = $entity->get('field_domain_access');
-      if (!$item->isEmpty()) {
-        $domain_id = $item->get(0)->getString();
-      }
-    }
-
-    return $domain_id;
+    return $domain_id ?? '';
   }
 
 }
