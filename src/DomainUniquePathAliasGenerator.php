@@ -4,7 +4,6 @@ namespace Drupal\domain_unique_path_alias;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityMalformedException;
-use Drupal\Core\Entity\Exception\UndefinedLinkTemplateException;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\pathauto\PathautoGenerator;
@@ -12,7 +11,6 @@ use Drupal\pathauto\PathautoGeneratorInterface;
 
 /**
  * Provides methods for generating path aliases.
- * @see \Drupal\pathauto\PathautoGenerator
  *
  * For now, only op "return" is supported.
  */

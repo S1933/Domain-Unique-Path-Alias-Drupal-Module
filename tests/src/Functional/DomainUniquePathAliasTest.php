@@ -22,10 +22,9 @@ class DomainUniquePathAliasTest extends DomainTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
+    'domain',
     'domain_access',
     'domain_source',
-    'domain_unique_path_alias',
-    'domain',
     'field',
     'node',
     'path_alias',
@@ -53,10 +52,10 @@ class DomainUniquePathAliasTest extends DomainTestBase {
         'alias' => '/contact',
       ],
       DomainAccessManagerInterface::DOMAIN_ACCESS_FIELD => [
-        $domains['example_com']->id()
+        $domains['example_com']->id(),
       ],
       DomainSourceElementManagerInterface::DOMAIN_SOURCE_FIELD => [
-        $domains['example_com']->id()
+        $domains['example_com']->id(),
       ],
     ]);
 
@@ -67,10 +66,10 @@ class DomainUniquePathAliasTest extends DomainTestBase {
         'alias' => '/contact-bis',
       ],
       DomainAccessManagerInterface::DOMAIN_ACCESS_FIELD => [
-        $domains['example_com']->id()
+        $domains['example_com']->id(),
       ],
       DomainSourceElementManagerInterface::DOMAIN_SOURCE_FIELD => [
-        $domains['example_com']->id()
+        $domains['example_com']->id(),
       ],
     ]);
 
@@ -81,10 +80,10 @@ class DomainUniquePathAliasTest extends DomainTestBase {
         'alias' => '/contact',
       ],
       DomainAccessManagerInterface::DOMAIN_ACCESS_FIELD => [
-        $domains['domain1_example_com']->id()
+        $domains['domain1_example_com']->id(),
       ],
       DomainSourceElementManagerInterface::DOMAIN_SOURCE_FIELD => [
-        $domains['domain1_example_com']->id()
+        $domains['domain1_example_com']->id(),
       ],
     ]);
   }
@@ -96,11 +95,11 @@ class DomainUniquePathAliasTest extends DomainTestBase {
     $this->drupalLogin($this->rootUser);
 
     $this->drupalGet('admin/content');
-    $this->assertSession()->responseContains('<a href="http://example.com/contact" hreflang="en">');
-    $this->assertSession()->responseContains('<a href="http://example.com/contact-bis" hreflang="en">');
-    $this->assertSession()->responseContains('<a href="http://domain1.example.com/contact" hreflang="en">');
+    $this->assertSession()->responseContains('<a href="http://example.com/web/contact" hreflang="en">');
+    $this->assertSession()->responseContains('<a href="http://example.com/web/contact-bis" hreflang="en">');
+    $this->assertSession()->responseContains('<a href="http://domain1.example.com/web/contact" hreflang="en">');
 
-    $constraint_message = 'The alias /contact is already in use in this domain (example_com).';
+    $constraint_message = 'The alias /contact is already in use in this language.';
 
     $edit = [
       'path[0][alias]' => '/contact-bis-bis',

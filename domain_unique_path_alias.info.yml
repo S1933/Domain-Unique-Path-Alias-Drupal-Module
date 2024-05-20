@@ -6,5 +6,7 @@ core_version_requirement: ^9.4 || ^10
 dependencies:
   - domain:domain
   - domain:domain_source
+  - pathauto:pathauto
   - drupal:path_alias
-  - drupal:pathauto
+  - drupal:field
+  - drupal:node
