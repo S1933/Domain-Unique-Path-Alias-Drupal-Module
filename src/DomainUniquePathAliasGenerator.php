@@ -2,12 +2,24 @@
 
 namespace Drupal\domain_unique_path_alias;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityMalformedException;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\StringTranslation\TranslationInterface;
+use Drupal\pathauto\AliasCleanerInterface;
+use Drupal\pathauto\AliasStorageHelperInterface;
+use Drupal\pathauto\AliasTypeManager;
+use Drupal\pathauto\AliasUniquifierInterface;
 use Drupal\pathauto\PathautoGenerator;
 use Drupal\pathauto\PathautoGeneratorInterface;
+use Drupal\token\Token;
+use Drupal\token\TokenEntityMapperInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Provides methods for generating path aliases.
@@ -15,6 +27,56 @@ use Drupal\pathauto\PathautoGeneratorInterface;
  * For now, only op "return" is supported.
  */
 class DomainUniquePathAliasGenerator extends PathautoGenerator {
+
+  /**
+   * The current request.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $currentRequest;
+
+  /**
+   * Constructor DomainUniquePathAliasGenerator class.
+   *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
+   * @param \Drupal\Core\Utility\Token $token
+   *   The token utility.
+   * @param \Drupal\pathauto\AliasCleanerInterface $alias_cleaner
+   *   The alias cleaner.
+   * @param \Drupal\pathauto\AliasStorageHelperInterface $alias_storage_helper
+   *   The alias storage helper.
+   * @param \Drupal\pathauto\AliasUniquifierInterface $alias_uniquifier
+   *   The alias uniquifier.
+   * @param \Drupal\pathauto\MessengerInterface $pathauto_messenger
+   *   The messenger service.
+   * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
+   *   The string translation service.
+   * @param \Drupal\token\TokenEntityMapperInterface $token_entity_mapper
+   *   The token entity mapper.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
+   * @param \Drupal\pathauto\AliasTypeManager $alias_type_manager
+   *   Manages pathauto alias type plugins.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $current_request
+   *   The current request.
+   */
+  public function __construct(ConfigFactoryInterface $config_factory, ModuleHandlerInterface $module_handler, Token $token, AliasCleanerInterface $alias_cleaner, AliasStorageHelperInterface $alias_storage_helper, AliasUniquifierInterface $alias_uniquifier, MessengerInterface $pathauto_messenger, TranslationInterface $string_translation, TokenEntityMapperInterface $token_entity_mapper, EntityTypeManagerInterface $entity_type_manager, AliasTypeManager $alias_type_manager, RequestStack $current_request) {
+    $this->configFactory = $config_factory;
+    $this->moduleHandler = $module_handler;
+    $this->token = $token;
+    $this->aliasCleaner = $alias_cleaner;
+    $this->aliasStorageHelper = $alias_storage_helper;
+    $this->aliasUniquifier = $alias_uniquifier;
+    $this->pathautoMessenger = $pathauto_messenger;
+    $this->stringTranslation = $string_translation;
+    $this->tokenEntityMapper = $token_entity_mapper;
+    $this->entityTypeManager = $entity_type_manager;
+    $this->aliasTypeManager = $alias_type_manager;
+    $this->currentRequest = $current_request;
+  }
 
   /**
    * {@inheritdoc}
@@ -106,10 +168,15 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
       return NULL;
     }
 
-    $domain_id = \Drupal::request()->request->get('field_domain_source');
+    $domain_id = $this->currentRequest->query->get('field_domain_source');
+
     // Do not generate a unique path alias if it already exists.
     if ($this->aliasUniquifier->isReserved($alias, $source, $langcode, $domain_id)) {
-      \Drupal::messenger()->addWarning(t('Path alias should be unique for, source: '. $source . ', langcode: ' . $langcode . ', domain_id: ' . $domain_id));
+      $this->pathautoMessenger->addMessage($this->t('Path alias should be unique for, source: %source, langcode: %langcode, domain_id: %domain_id', [
+        '%source' => $source,
+        '%langcode' => $langcode,
+        '%domain_id' => $domain_id,
+      ]), $op);
     }
 
     // If the alias already exists, generate a new, hopefully unique, variant.
@@ -145,4 +212,5 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
 
     return $return;
   }
+
 }

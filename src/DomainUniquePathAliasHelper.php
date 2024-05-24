@@ -34,8 +34,6 @@ class DomainUniquePathAliasHelper {
    */
   public function getPathDomainId(string $path): string {
     $path = ltrim($path, '/');
-    $domain_id = '';
-
     $parts = explode('/', $path);
     $id = end($parts);
     switch ($parts[0]) {
@@ -56,18 +54,18 @@ class DomainUniquePathAliasHelper {
   /**
    * Get the domain id for a given entity.
    *
-   * @param EntityPublishedInterface $entity
+   * @param \Drupal\Core\Entity\EntityPublishedInterface $entity
    *   The entity.
    *
    * @return string
    *   Domain id if any or empty string.
    */
   public function getDomainId(EntityPublishedInterface $entity): string {
-    // Get the domain id if using domain_source or fallback with domain_access field.
+    // Get domain_id using domain_source or fallback with domain_access field.
     if ($entity->hasField('field_domain_source') && !$entity->get('field_domain_source')->isEmpty()) {
       $domain_id = $entity->get('field_domain_source')->getString();
     }
-    else if ($entity->hasField('field_domain_access') && !$entity->get('field_domain_access')->isEmpty()) {
+    elseif ($entity->hasField('field_domain_access') && !$entity->get('field_domain_access')->isEmpty()) {
       $domain_id = $entity->get('field_domain_access')->first()->getString();
     }
 

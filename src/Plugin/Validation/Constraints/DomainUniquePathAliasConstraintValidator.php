@@ -2,14 +2,46 @@
 
 namespace Drupal\domain_unique_path_alias\Plugin\Validation\Constraints;
 
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Path\Plugin\Validation\Constraint\UniquePathAliasConstraintValidator;
-use Drupal\node\NodeInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Validator\Constraint;
 
 /**
  * Constraint validator for changing path aliases with domain control.
  */
 class DomainUniquePathAliasConstraintValidator extends UniquePathAliasConstraintValidator {
+
+  /**
+   * The current request.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $currentRequest;
+
+  /**
+   * Creates a new DomainUniquePathAliasConstraintValidator instance.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $current_request
+   *   The current request.
+   */
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, RequestStack $current_request) {
+    $this->entityTypeManager = $entity_type_manager;
+    $this->currentRequest = $current_request;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity_type.manager'),
+      $container->get('request_stack')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -33,7 +65,8 @@ class DomainUniquePathAliasConstraintValidator extends UniquePathAliasConstraint
       $query->condition('path', $path, '<>');
     }
 
-    $fieldDomainSource = \Drupal::request()->request->get('field_domain_source');
+    $fieldDomainSource = $this->currentRequest->getCurrentRequest()
+      ->get('field_domain_source');
     if (!empty($fieldDomainSource)) {
       $query->condition('domain_id', $fieldDomainSource, '=');
     }
@@ -46,20 +79,23 @@ class DomainUniquePathAliasConstraintValidator extends UniquePathAliasConstraint
         !empty($fieldDomainSource)
         && $existingAlias->get('domain_id')->getString() === $fieldDomainSource
       ) {
-        $this->context->buildViolation($constraint->message_domain, [
+        $this->context->buildViolation($constraint->messageDomain, [
           '%alias' => $alias,
           '%domain' => $fieldDomainSource,
         ])->addViolation();
-      } else if ($existingAlias->getAlias() !== $alias) {
+      }
+      elseif ($existingAlias->getAlias() !== $alias) {
         $this->context->buildViolation($constraint->differentCapitalizationMessage, [
           '%alias' => $alias,
           '%stored_alias' => $existingAlias->getAlias(),
         ])->addViolation();
-      } else {
+      }
+      else {
         $this->context->buildViolation($constraint->message, [
           '%alias' => $alias,
         ])->addViolation();
       }
     }
   }
+
 }

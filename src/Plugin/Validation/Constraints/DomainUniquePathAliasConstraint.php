@@ -14,5 +14,6 @@ class DomainUniquePathAliasConstraint extends UniquePathAliasConstraint {
    *
    * @var string
    */
-  public $message_domain = 'The alias %alias is already in use in this domain (%domain).';
+  public $messageDomain = 'The alias %alias is already in use in this domain (%domain).';
+
 }

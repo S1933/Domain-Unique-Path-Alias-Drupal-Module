@@ -94,7 +94,7 @@ class DomainUniquePathAliasManager extends AliasManager {
       return $alias;
     }
 
-    // todo: Investigate if TYPE_CONTENT is the correct type or should be editable in modules settings.
+    // @todo Investigate if TYPE_CONTENT is the correct type or should be editable in modules settings.
     $langcode = $langcode ?: $this->languageManager
       ->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)
       ->getId();
@@ -134,7 +134,7 @@ class DomainUniquePathAliasManager extends AliasManager {
    * @return bool
    *   Check result.
    */
-  private function  isAssetFile($alias) {
+  private function isAssetFile($alias) {
     $noAlias = ['svg', 'png', 'jpeg', 'jpg', 'css', 'js', 'gif', 'webp', 'ts'];
     $extension = pathinfo($alias, PATHINFO_EXTENSION);
     $extension = explode('?', $extension);

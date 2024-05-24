@@ -32,7 +32,7 @@ class DomainUniquePathAliasUniquifier extends AliasUniquifier {
     ModuleHandlerInterface $module_handler,
     RouteProviderInterface $route_provider,
     AliasManagerInterface $alias_manager,
-    Connection $database
+    Connection $database,
   ) {
     parent::__construct(
       $config_factory,
@@ -64,8 +64,8 @@ class DomainUniquePathAliasUniquifier extends AliasUniquifier {
     if (isset($result['path'])) {
       $existing_path = $result['path'];
       if ($existing_path !== $alias) {
-        // If it is an alias for the provided source, it is allowed to keep using
-        // it. If not, then it is reserved.
+        // If it is an alias for the provided source,
+        // it is allowed to keep using it. If not, then it is reserved.
         return $existing_path !== $source;
       }
     }

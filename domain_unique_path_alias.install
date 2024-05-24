@@ -1,6 +1,11 @@
 <?php
 
-use Drupal\Core\Field\BaseFieldDefinition;
+/**
+ * @file
+ * Install, update, and uninstall functions for domain_unique_path_alias.
+ *
+ * @ingroup domain_unique_path_alias
+ */
 
 /**
  * Implements hook_install().

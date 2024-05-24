@@ -19,11 +19,12 @@ services:
       - '@pathauto.alias_cleaner'
       - '@pathauto.alias_storage_helper'
       - '@domain_unique_path_alias.alias_uniquifier'
-      - '@pathauto.verbose_messenger'
+      - '@messenger'
       - '@string_translation'
       - '@token.entity_mapper'
       - '@entity_type.manager'
       - '@plugin.manager.alias_type'
+      - '@request_stack'
   domain_unique_path_alias.alias_uniquifier:
     class: Drupal\domain_unique_path_alias\DomainUniquePathAliasUniquifier
     arguments:
