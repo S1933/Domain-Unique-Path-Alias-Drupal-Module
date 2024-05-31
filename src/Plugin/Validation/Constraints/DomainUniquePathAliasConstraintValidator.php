@@ -65,7 +65,8 @@ class DomainUniquePathAliasConstraintValidator extends UniquePathAliasConstraint
       $query->condition('path', $path, '<>');
     }
 
-    $fieldDomainSource = $this->currentRequest->getCurrentRequest()
+    $fieldDomainSource = $this->currentRequest
+      ->getCurrentRequest()
       ->get('field_domain_source');
     if (!empty($fieldDomainSource)) {
       $query->condition('domain_id', $fieldDomainSource, '=');

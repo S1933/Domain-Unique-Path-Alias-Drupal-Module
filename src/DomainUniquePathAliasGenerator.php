@@ -168,8 +168,9 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
       return NULL;
     }
 
-    $domain_id = $this->currentRequest->query->get('field_domain_source');
-
+    $domain_id = $this->currentRequest
+      ->getCurrentRequest()
+      ->get('field_domain_source');
     // Do not generate a unique path alias if it already exists.
     if ($this->aliasUniquifier->isReserved($alias, $source, $langcode, $domain_id)) {
       $this->pathautoMessenger->addMessage($this->t('Path alias should be unique for, source: %source, langcode: %langcode, domain_id: %domain_id', [
