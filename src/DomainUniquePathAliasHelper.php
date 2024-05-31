@@ -2,6 +2,7 @@
 
 namespace Drupal\domain_unique_path_alias;
 
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
@@ -54,13 +55,13 @@ class DomainUniquePathAliasHelper {
   /**
    * Get the domain id for a given entity.
    *
-   * @param \Drupal\Core\Entity\EntityPublishedInterface $entity
+   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
    *   The entity.
    *
    * @return string
    *   Domain id if any or empty string.
    */
-  public function getDomainId(EntityPublishedInterface $entity): string {
+  public function getDomainId(ContentEntityInterface $entity): string {
     // Get domain_id using domain_source or fallback with domain_access field.
     if ($entity->hasField('field_domain_source') && !$entity->get('field_domain_source')->isEmpty()) {
       $domain_id = $entity->get('field_domain_source')->getString();

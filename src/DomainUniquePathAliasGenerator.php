@@ -8,16 +8,16 @@ use Drupal\Core\Entity\EntityMalformedException;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\LanguageInterface;
-use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\StringTranslation\TranslationInterface;
+use Drupal\Core\Utility\Token;
 use Drupal\pathauto\AliasCleanerInterface;
 use Drupal\pathauto\AliasStorageHelperInterface;
 use Drupal\pathauto\AliasTypeManager;
 use Drupal\pathauto\AliasUniquifierInterface;
+use Drupal\pathauto\MessengerInterface;
 use Drupal\pathauto\PathautoGenerator;
 use Drupal\pathauto\PathautoGeneratorInterface;
-use Drupal\token\Token;
 use Drupal\token\TokenEntityMapperInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
