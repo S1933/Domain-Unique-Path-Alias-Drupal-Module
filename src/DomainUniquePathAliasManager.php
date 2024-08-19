@@ -2,93 +2,76 @@
 
 namespace Drupal\domain_unique_path_alias;
 
-use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\path_alias\AliasManager;
-use Drupal\path_alias\AliasWhitelistInterface;
+use Drupal\path_alias\AliasManagerInterface;
 use Drupal\path_alias\PathAliasInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * The path alias manager decorator.
  */
-class DomainUniquePathAliasManager extends AliasManager {
+class DomainUniquePathAliasManager implements AliasManagerInterface {
 
   use DependencySerializationTrait;
 
   /**
-   * The path alias entity.
+   * The decorated path alias manager.
    *
-   * @var \Drupal\path_alias\Entity\PathAlias
+   * @var \Drupal\path_alias\AliasManagerInterface
    */
-  protected $pathAlias;
+  protected $inner;
 
   /**
-   * The Entity Type Manager.
+   * The entity type manager.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
 
   /**
-   * A RequestStack instance.
+   * Language manager for retrieving the default langcode when none is specified.
    *
-   * @var \Symfony\Component\HttpFoundation\RequestStack
+   * @var \Drupal\Core\Language\LanguageManagerInterface
    */
-  protected $requestStack;
+  protected $languageManager;
 
   /**
-   * The current request.
+   * The helper service.
    *
-   * @var \Symfony\Component\HttpFoundation\Request
+   * @var \Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper
    */
-  protected $currentRequest;
+  protected $helper;
 
   /**
    * Constructs an AliasManager with DomainPathAliasManager.
    *
-   * @param \Drupal\path_alias\AliasRepositoryInterface $alias_repository
-   *   The path alias repository.
-   * @param \Drupal\path_alias\AliasWhitelistInterface $whitelist
-   *   The whitelist implementation to use.
+   * @param \Drupal\path_alias\AliasManagerInterface $inner
+   *   The decorated alias manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *    The entity type manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
-   * @param \Drupal\Core\Cache\CacheBackendInterface $cache
-   *   Cache backend.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   The entity type manager.
-   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
-   *   The request stack.
+   * @param \Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper $helper
+   *   The helper service.
    */
   public function __construct(
-    $alias_repository,
-    AliasWhitelistInterface $whitelist,
-    LanguageManagerInterface $language_manager,
-    CacheBackendInterface $cache,
+    AliasManagerInterface $inner,
     EntityTypeManagerInterface $entity_type_manager,
-    RequestStack $request_stack,
+    LanguageManagerInterface $language_manager,
+    DomainUniquePathAliasHelper $helper
   ) {
-    parent::__construct($alias_repository, $whitelist, $language_manager, $cache);
+    $this->inner = $inner;
     $this->entityTypeManager = $entity_type_manager;
-    $this->requestStack = $request_stack;
+    $this->languageManager = $language_manager;
+    $this->helper = $helper;
   }
 
   /**
-   * Given the alias, return the path it represents.
-   *
-   * @param string $alias
-   *   An alias.
-   * @param string $langcode
-   *   An optional language code to look up the path in.
-   *
-   * @return string
-   *   The path represented by alias, or the alias if no path was found.
+   * {@inheritdoc}
    */
   public function getPathByAlias($alias, $langcode = NULL) {
-
     // Do not process asset files.
     if ($this->isAssetFile($alias)) {
       return $alias;
@@ -99,10 +82,7 @@ class DomainUniquePathAliasManager extends AliasManager {
       ->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)
       ->getId();
 
-    $domain_id = NULL;
-    if (!empty($this->getRequest())) {
-      $domain_id = $this->currentRequest->request->get('field_domain_source_url') ?? $this->currentRequest->request->get('field_domain_source');
-    }
+    $domain_id = $this->helper->getDomainIdByRequest();
 
     if ($alias && $domain_id && $langcode) {
       $properties = [
@@ -116,13 +96,44 @@ class DomainUniquePathAliasManager extends AliasManager {
 
       foreach ($path_aliases as $path_alias) {
         if ($path_alias instanceof PathAliasInterface) {
-          $this->pathAlias = $path_alias;
-          return $this->pathAlias->getPath();
+          return $path_alias->getPath();
         }
       }
     }
 
-    return parent::getPathByAlias($alias, $langcode);
+    return $this->inner->getPathByAlias($alias, $langcode);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getAliasByPath($path, $langcode = NULL) {
+    return $this->inner->getAliasByPath($path, $langcode);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function cacheClear($source = NULL) {
+    $this->inner->cacheClear($source);
+  }
+
+  /**
+   * This method is part of AliasManager, but not AliasManagerInterface.
+   */
+  public function setCacheKey($key) {
+    if (method_exists($this->inner, 'setCacheKey')) {
+      $this->inner->setCacheKey($key);
+    }
+  }
+
+  /**
+   * This method is part of AliasManager, but not AliasManagerInterface.
+   */
+  public function writeCache() {
+    if (method_exists($this->inner, 'writeCache')) {
+      $this->inner->writeCache();
+    }
   }
 
   /**
@@ -142,19 +153,6 @@ class DomainUniquePathAliasManager extends AliasManager {
       return TRUE;
     }
     return FALSE;
-  }
-
-  /**
-   * Ensures that the currentRequest is loaded.
-   *
-   * @return \Symfony\Component\HttpFoundation\Request|null
-   *   The current request object.
-   */
-  private function getRequest() {
-    if (!isset($this->currentRequest)) {
-      $this->currentRequest = $this->requestStack->getCurrentRequest();
-    }
-    return $this->currentRequest;
   }
 
 }

@@ -3,28 +3,28 @@ services:
     class: Drupal\domain_unique_path_alias\DomainUniquePathAliasManager
     decorates: path_alias.manager
     arguments:
-      - '@path_alias.repository'
-      - '@path_alias.whitelist'
-      - '@language_manager'
-      - '@cache.data'
+      - '@domain_unique_path_alias.path_alias_manager.inner'
       - '@entity_type.manager'
-      - '@request_stack'
+      - '@language_manager'
+      - '@domain_unique_path_alias.helper'
+
   domain_unique_path_alias.generator:
     class: Drupal\domain_unique_path_alias\DomainUniquePathAliasGenerator
     decorates: pathauto.generator
     arguments:
+      - '@domain_unique_path_alias.generator.inner'
       - '@config.factory'
       - '@module_handler'
       - '@token'
       - '@pathauto.alias_cleaner'
       - '@pathauto.alias_storage_helper'
       - '@domain_unique_path_alias.alias_uniquifier'
-      - '@messenger'
-      - '@string_translation'
+      - '@pathauto.verbose_messenger'
       - '@token.entity_mapper'
       - '@entity_type.manager'
-      - '@plugin.manager.alias_type'
-      - '@request_stack'
+      - '@messenger'
+      - '@domain_unique_path_alias.helper'
+
   domain_unique_path_alias.alias_uniquifier:
     class: Drupal\domain_unique_path_alias\DomainUniquePathAliasUniquifier
     arguments:
@@ -37,4 +37,7 @@ services:
 
   domain_unique_path_alias.helper:
     class: Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper
-    arguments: ['@entity_type.manager']
+    arguments:
+      - '@entity_type.manager'
+      - '@domain.negotiator'
+      - '@request_stack'

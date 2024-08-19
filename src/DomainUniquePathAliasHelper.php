@@ -5,6 +5,9 @@ namespace Drupal\domain_unique_path_alias;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\domain\DomainNegotiatorInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Provides helper functions for the Domain Unique Path Alias.
@@ -16,8 +19,16 @@ class DomainUniquePathAliasHelper {
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
+   * @param \Drupal\domain\DomainNegotiatorInterface $domainNegotiator
+   *   The domain negotiator.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
+   *   The request stack.
    */
-  public function __construct(protected EntityTypeManagerInterface $entityTypeManager) {}
+  public function __construct(
+    protected EntityTypeManagerInterface $entityTypeManager,
+    protected DomainNegotiatorInterface $domainNegotiator,
+    protected RequestStack $requestStack,
+  ) {}
 
   /**
    * Gets the domain id from the path.
@@ -71,6 +82,22 @@ class DomainUniquePathAliasHelper {
     }
 
     return $domain_id ?? '';
+  }
+
+  /**
+   * Get the domain id for a given request.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request|null $request
+   *   The entity.
+   *
+   * @return string
+   *   Domain id if any or empty string.
+   */
+  public function getDomainIdByRequest(?Request $request = NULL): string {
+    $request ??= $this->requestStack->getCurrentRequest();
+
+    return $request?->request->get('field_domain_source')
+      ?? $this->domainNegotiator->getActiveDomain()?->id();
   }
 
 }

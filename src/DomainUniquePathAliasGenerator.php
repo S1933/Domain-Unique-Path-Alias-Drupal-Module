@@ -3,41 +3,123 @@
 namespace Drupal\domain_unique_path_alias;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityMalformedException;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Render\BubbleableMetadata;
-use Drupal\Core\StringTranslation\TranslationInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Utility\Token;
 use Drupal\pathauto\AliasCleanerInterface;
 use Drupal\pathauto\AliasStorageHelperInterface;
-use Drupal\pathauto\AliasTypeManager;
 use Drupal\pathauto\AliasUniquifierInterface;
-use Drupal\pathauto\MessengerInterface;
-use Drupal\pathauto\PathautoGenerator;
+use Drupal\pathauto\MessengerInterface as PathAutoMessengerInterface;
 use Drupal\pathauto\PathautoGeneratorInterface;
+use Drupal\pathauto\PathautoState;
 use Drupal\token\TokenEntityMapperInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Provides methods for generating path aliases.
  *
  * For now, only op "return" is supported.
  */
-class DomainUniquePathAliasGenerator extends PathautoGenerator {
+class DomainUniquePathAliasGenerator implements PathautoGeneratorInterface {
+
+  use StringTranslationTrait;
 
   /**
-   * The current request.
+   * The decorated pathauto generator.
    *
-   * @var \Symfony\Component\HttpFoundation\RequestStack
+   * @var \Drupal\pathauto\PathautoGeneratorInterface
    */
-  protected $currentRequest;
+  protected $inner;
 
   /**
-   * Constructor DomainUniquePathAliasGenerator class.
+   * Config factory.
    *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
+   * Module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
+   * Token service.
+   *
+   * @var \Drupal\Core\Utility\Token
+   */
+  protected $token;
+
+  /**
+   * The alias cleaner.
+   *
+   * @var \Drupal\pathauto\AliasCleanerInterface
+   */
+  protected $aliasCleaner;
+
+  /**
+   * The alias storage helper.
+   *
+   * @var \Drupal\pathauto\AliasStorageHelperInterface
+   */
+  protected $aliasStorageHelper;
+
+  /**
+   * The alias uniquifier.
+   *
+   * @var \Drupal\pathauto\AliasUniquifierInterface
+   */
+  protected $aliasUniquifier;
+
+  /**
+   * The messenger service.
+   *
+   * @var \Drupal\pathauto\MessengerInterface
+   */
+  protected $pathautoMessenger;
+
+  /**
+   * The token entity mapper.
+   *
+   * @var \Drupal\token\TokenEntityMapperInterface
+   */
+  protected $tokenEntityMapper;
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * The messenger service.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
+   * The helper service
+   *
+   * @var \Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper
+   */
+  protected $helper;
+
+  /**
+   * Creates a new Pathauto manager.
+   *
+   * @param \Drupal\pathauto\PathautoGeneratorInterface $inner
+   *   The decorated pathauto generator.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
@@ -48,22 +130,34 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
    *   The alias cleaner.
    * @param \Drupal\pathauto\AliasStorageHelperInterface $alias_storage_helper
    *   The alias storage helper.
-   * @param \Drupal\pathauto\AliasUniquifierInterface $alias_uniquifier
+   * @param AliasUniquifierInterface $alias_uniquifier
    *   The alias uniquifier.
    * @param \Drupal\pathauto\MessengerInterface $pathauto_messenger
    *   The messenger service.
-   * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
-   *   The string translation service.
    * @param \Drupal\token\TokenEntityMapperInterface $token_entity_mapper
    *   The token entity mapper.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
-   * @param \Drupal\pathauto\AliasTypeManager $alias_type_manager
-   *   Manages pathauto alias type plugins.
-   * @param \Symfony\Component\HttpFoundation\RequestStack $current_request
-   *   The current request.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger service.
+   * @param \Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper $helper
+   *   The helper service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, ModuleHandlerInterface $module_handler, Token $token, AliasCleanerInterface $alias_cleaner, AliasStorageHelperInterface $alias_storage_helper, AliasUniquifierInterface $alias_uniquifier, MessengerInterface $pathauto_messenger, TranslationInterface $string_translation, TokenEntityMapperInterface $token_entity_mapper, EntityTypeManagerInterface $entity_type_manager, AliasTypeManager $alias_type_manager, RequestStack $current_request) {
+  public function __construct(
+    PathautoGeneratorInterface $inner,
+    ConfigFactoryInterface $config_factory,
+    ModuleHandlerInterface $module_handler,
+    Token $token,
+    AliasCleanerInterface $alias_cleaner,
+    AliasStorageHelperInterface $alias_storage_helper,
+    AliasUniquifierInterface $alias_uniquifier,
+    PathAutoMessengerInterface $pathauto_messenger,
+    TokenEntityMapperInterface $token_entity_mapper,
+    EntityTypeManagerInterface $entity_type_manager,
+    MessengerInterface $messenger,
+    DomainUniquePathAliasHelper $helper,
+  ) {
+    $this->inner = $inner;
     $this->configFactory = $config_factory;
     $this->moduleHandler = $module_handler;
     $this->token = $token;
@@ -71,11 +165,10 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
     $this->aliasStorageHelper = $alias_storage_helper;
     $this->aliasUniquifier = $alias_uniquifier;
     $this->pathautoMessenger = $pathauto_messenger;
-    $this->stringTranslation = $string_translation;
     $this->tokenEntityMapper = $token_entity_mapper;
     $this->entityTypeManager = $entity_type_manager;
-    $this->aliasTypeManager = $alias_type_manager;
-    $this->currentRequest = $current_request;
+    $this->messenger = $messenger;
+    $this->helper = $helper;
   }
 
   /**
@@ -168,9 +261,7 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
       return NULL;
     }
 
-    $domain_id = $this->currentRequest
-      ->getCurrentRequest()
-      ->get('field_domain_source');
+    $domain_id = $this->helper->getDomainIdByRequest();
     // Do not generate a unique path alias if it already exists.
     if ($this->aliasUniquifier->isReserved($alias, $source, $langcode, $domain_id)) {
       $this->pathautoMessenger->addMessage($this->t('Path alias should be unique for, source: %source, langcode: %langcode, domain_id: %domain_id', [
@@ -182,7 +273,7 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
 
     // If the alias already exists, generate a new, hopefully unique, variant.
     $original_alias = $alias;
-    $this->aliasUniquifier->uniquify($alias, $source, $langcode);
+    $this->aliasUniquifier->uniquify($alias, $source, $langcode, $domain_id);
     if ($original_alias !== $alias) {
       // Alert the user why this happened.
       $this->pathautoMessenger->addMessage($this->t('The automatically generated alias %original_alias conflicted with an existing alias. Alias changed to %alias.', [
@@ -212,6 +303,75 @@ class DomainUniquePathAliasGenerator extends PathautoGenerator {
     }
 
     return $return;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function updateEntityAlias(EntityInterface $entity, $op, array $options = []) {
+    // Skip if the entity does not have the path field.
+    if (!($entity instanceof ContentEntityInterface) || !$entity->hasField('path')) {
+      return NULL;
+    }
+
+    // Skip if pathauto processing is disabled.
+    if ($entity->path->pathauto != PathautoState::CREATE && empty($options['force'])) {
+      return NULL;
+    }
+
+    // Only act if this is the default revision.
+    if ($entity instanceof RevisionableInterface && !$entity->isDefaultRevision()) {
+      return NULL;
+    }
+
+    $options += ['language' => $entity->language()->getId()];
+    $type = $entity->getEntityTypeId();
+
+    // Skip processing if the entity has no pattern.
+    if (!$this->getPatternByEntity($entity)) {
+      return NULL;
+    }
+
+    // Deal with taxonomy specific logic.
+    // @todo Update and test forum related code.
+    if ($type == 'taxonomy_term') {
+      $config_forum = $this->configFactory->get('forum.settings');
+      if ($entity->bundle() == $config_forum->get('vocabulary')) {
+        $type = 'forum';
+      }
+    }
+
+    try {
+      $result = $this->createEntityAlias($entity, $op);
+    }
+    catch (\InvalidArgumentException $e) {
+      $this->messenger->addError($e->getMessage());
+      return NULL;
+    }
+
+    // @todo Move this to a method on the pattern plugin.
+    if ($type == 'taxonomy_term') {
+      $subterms = $this->entityTypeManager->getStorage('taxonomy_term')->loadChildren($entity->id());
+      foreach ($subterms as $subterm) {
+        $this->updateEntityAlias($subterm, $op, $options);
+      }
+    }
+
+    return $result;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function resetCaches() {
+    $this->inner->resetCaches();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getPatternByEntity(EntityInterface $entity) {
+    return $this->inner->getPatternByEntity($entity);
   }
 
 }

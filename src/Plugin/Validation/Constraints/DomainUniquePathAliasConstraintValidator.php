@@ -2,10 +2,8 @@
 
 namespace Drupal\domain_unique_path_alias\Plugin\Validation\Constraints;
 
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Path\Plugin\Validation\Constraint\UniquePathAliasConstraintValidator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Validator\Constraint;
 
 /**
@@ -14,33 +12,20 @@ use Symfony\Component\Validator\Constraint;
 class DomainUniquePathAliasConstraintValidator extends UniquePathAliasConstraintValidator {
 
   /**
-   * The current request.
+   * The helper service.
    *
-   * @var \Symfony\Component\HttpFoundation\RequestStack
+   * @var \Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper
    */
-  protected $currentRequest;
-
-  /**
-   * Creates a new DomainUniquePathAliasConstraintValidator instance.
-   *
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   The entity type manager.
-   * @param \Symfony\Component\HttpFoundation\RequestStack $current_request
-   *   The current request.
-   */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, RequestStack $current_request) {
-    $this->entityTypeManager = $entity_type_manager;
-    $this->currentRequest = $current_request;
-  }
+  protected $helper;
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('entity_type.manager'),
-      $container->get('request_stack')
-    );
+    $instance = parent::create($container);
+    $instance->helper = $container->get('domain_unique_path_alias.helper');
+
+    return $instance;
   }
 
   /**
@@ -65,9 +50,7 @@ class DomainUniquePathAliasConstraintValidator extends UniquePathAliasConstraint
       $query->condition('path', $path, '<>');
     }
 
-    $fieldDomainSource = $this->currentRequest
-      ->getCurrentRequest()
-      ->get('field_domain_source');
+    $fieldDomainSource = $this->helper->getDomainIdByRequest();
     if (!empty($fieldDomainSource)) {
       $query->condition('domain_id', $fieldDomainSource, '=');
     }

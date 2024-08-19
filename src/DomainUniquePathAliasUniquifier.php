@@ -2,6 +2,7 @@
 
 namespace Drupal\domain_unique_path_alias;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -47,7 +48,31 @@ class DomainUniquePathAliasUniquifier extends AliasUniquifier {
   /**
    * {@inheritdoc}
    */
-  public function isReserved($alias, $source, $langcode = LanguageInterface::LANGCODE_NOT_SPECIFIED, $domain_id = '') {
+  public function uniquify(&$alias, $source, $langcode, $domain_id = NULL) {
+    $config = $this->configFactory->get('pathauto.settings');
+
+    if (!$this->isReserved($alias, $source, $langcode, $domain_id)) {
+      return;
+    }
+
+    // If the alias already exists, generate a new, hopefully unique, variant.
+    $maxlength = min($config->get('max_length'), $this->aliasStorageHelper->getAliasSchemaMaxlength());
+    $separator = $config->get('separator');
+    $original_alias = $alias;
+
+    $i = 0;
+    do {
+      // Append an incrementing numeric suffix until we find a unique alias.
+      $unique_suffix = $separator . $i;
+      $alias = Unicode::truncate($original_alias, $maxlength - mb_strlen($unique_suffix), TRUE) . $unique_suffix;
+      $i++;
+    } while ($this->isReserved($alias, $source, $langcode, $domain_id));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isReserved($alias, $source, $langcode = LanguageInterface::LANGCODE_NOT_SPECIFIED, $domain_id = NULL) {
 
     // If domain id is not provided, use parent uniquifier.
     if (empty($domain_id)) {
