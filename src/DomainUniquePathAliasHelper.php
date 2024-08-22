@@ -88,7 +88,7 @@ class DomainUniquePathAliasHelper {
    * Get the domain id for a given request.
    *
    * @param \Symfony\Component\HttpFoundation\Request|null $request
-   *   The entity.
+   *   The request.
    *
    * @return string
    *   Domain id if any or empty string.
@@ -107,4 +107,5 @@ class DomainUniquePathAliasHelper {
 
     return $domain_id;
   }
+
 }
