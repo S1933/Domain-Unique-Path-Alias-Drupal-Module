@@ -31,7 +31,7 @@ class DomainUniquePathAliasManager implements AliasManagerInterface {
   protected $entityTypeManager;
 
   /**
-   * Language manager for retrieving the default langcode when none is specified.
+   * Language manager.
    *
    * @var \Drupal\Core\Language\LanguageManagerInterface
    */
@@ -50,7 +50,7 @@ class DomainUniquePathAliasManager implements AliasManagerInterface {
    * @param \Drupal\path_alias\AliasManagerInterface $inner
    *   The decorated alias manager.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *    The entity type manager.
+   *   The entity type manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
    * @param \Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper $helper
@@ -60,7 +60,7 @@ class DomainUniquePathAliasManager implements AliasManagerInterface {
     AliasManagerInterface $inner,
     EntityTypeManagerInterface $entity_type_manager,
     LanguageManagerInterface $language_manager,
-    DomainUniquePathAliasHelper $helper
+    DomainUniquePathAliasHelper $helper,
   ) {
     $this->inner = $inner;
     $this->entityTypeManager = $entity_type_manager;

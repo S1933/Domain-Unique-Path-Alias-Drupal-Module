@@ -3,7 +3,6 @@
 namespace Drupal\domain_unique_path_alias;
 
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\domain\DomainNegotiatorInterface;
 use Symfony\Component\HttpFoundation\Request;

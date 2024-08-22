@@ -109,7 +109,7 @@ class DomainUniquePathAliasGenerator implements PathautoGeneratorInterface {
   protected $messenger;
 
   /**
-   * The helper service
+   * The helper service.
    *
    * @var \Drupal\domain_unique_path_alias\DomainUniquePathAliasHelper
    */
@@ -130,7 +130,7 @@ class DomainUniquePathAliasGenerator implements PathautoGeneratorInterface {
    *   The alias cleaner.
    * @param \Drupal\pathauto\AliasStorageHelperInterface $alias_storage_helper
    *   The alias storage helper.
-   * @param AliasUniquifierInterface $alias_uniquifier
+   * @param \Drupal\pathauto\AliasUniquifierInterface $alias_uniquifier
    *   The alias uniquifier.
    * @param \Drupal\pathauto\MessengerInterface $pathauto_messenger
    *   The messenger service.
