@@ -4,6 +4,7 @@ namespace Drupal\domain_unique_path_alias;
 
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\domain\DomainInterface;
 use Drupal\domain\DomainNegotiatorInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -59,7 +60,7 @@ class DomainUniquePathAliasHelper {
         break;
     }
 
-    return isset($entity) ? $this->getDomainId($entity) : '';
+    return isset($entity) ? $this->getDomainIdFromEntity($entity) : '';
   }
 
   /**
@@ -71,7 +72,7 @@ class DomainUniquePathAliasHelper {
    * @return string
    *   Domain id if any or empty string.
    */
-  public function getDomainId(ContentEntityInterface $entity): string {
+  public function getDomainIdFromEntity(ContentEntityInterface $entity): string {
     // Get domain_id using domain_source or fallback with domain_access field.
     if ($entity->hasField('field_domain_source') && !$entity->get('field_domain_source')->isEmpty()) {
       $domain_id = $entity->get('field_domain_source')->getString();
@@ -93,10 +94,17 @@ class DomainUniquePathAliasHelper {
    *   Domain id if any or empty string.
    */
   public function getDomainIdByRequest(?Request $request = NULL): string {
+    $domain = $this->domainNegotiator->getActiveDomain();
+    if (!$domain instanceof DomainInterface) {
+      return '';
+    }
+
+    $domain_id = $domain->id();
     $request ??= $this->requestStack->getCurrentRequest();
+    if ($request->request->has('field_domain_source')) {
+      $domain_id = $request->request->get('field_domain_source');
+    }
 
-    return $request?->request->get('field_domain_source')
-      ?? $this->domainNegotiator->getActiveDomain()?->id();
+    return $domain_id;
   }
-
 }
